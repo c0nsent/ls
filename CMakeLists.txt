@@ -3,4 +3,6 @@ project(ls)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(ls main.cpp)
+add_executable(ls
+        basic-types-aliases.hpp
+        main.cpp)
