@@ -1,52 +1,33 @@
 #include "cli-parser.hpp"
 
-#include <complex>
 #include <stdexcept>
 
 
-auto CliParser::toFlag(const std::string &flag) noexcept -> Flag
+namespace cli
 {
-    if (flag == "-1")
-        return Flag::OnePerLine;
-
-    if (flag == "--help" or flag == "-h")
-        return Flag::Help;
-
-    return Flag::Undefined;
-}
-
-
-CliParser::CliParser(const i32 argc, const char *argv[])
-{
-    //argv+1, потому что название программы не нужно
-    std::vector<std::string> args{argv + 1, argv + argc - 1};
-
-    for (u32 i{0}; i < argc; ++i)
+    Options & Options::addOption(const Option &option)
     {
-        const auto flag{toFlag(args[i])};
+        if (not m_options.try_emplace(option.name, option).second)
+        {
+            throw std::runtime_error("option already exists");
+        }
 
-        if (flag == Flag::Undefined)
-            throw std::logic_error("Undefined flag");
-
-        if (not m_args.try_emplace(flag, args[++i]).second)
-            throw std::logic_error("Duplicate flag");
-
-
+        return *this;
     }
 
-}
+    Parser::Parser(const i32 argc, const char *argv[], const Options &options)
+        : m_options(options)
+    {
+        m_arguments.reserve(argc - 1);
 
+        for (u32 i{1}; i < argc; ++i)
+        {
+            m_arguments.push_back(argv[i]);
+        }
 
-auto CliParser::has(Flag flag) const noexcept -> bool
-{
+        for (u32 i{0}; i != m_arguments.size() ; ++i)
+        {
 
-}
-auto CliParser::getString(Flag flag) const noexcept -> std::optional<std::string> {}
-auto CliParser::getBool(Flag flag) const noexcept -> std::optional<bool> {}
-auto CliParser::getInt(Flag flag) const noexcept -> std::optional<int> {}
-
-
-auto CliParser::get(Flag flag) const -> std::string
-{
-
+        }
+    }
 }

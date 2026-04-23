@@ -1,38 +1,60 @@
 #pragma once
 
-#include <limits>
-#include <optional>
+#include <string>
+#include <unordered_map>
+#include <variant>
+#include <vector>
+
 
 #include "basic-types-aliases.hpp"
 
-#include <string>
-#include <unordered_map>
-#include <span>
-#include <vector>
 
-enum Flag : u8
+namespace cli
 {
-    Help,
-    OnePerLine,
-    Undefined = std::numeric_limits<u8>::max(),
-};
+    enum class OptionType : u8
+    {
+        Boolean,
+        Integer,
+        String,
+    };
 
 
-class CliParser
-{
-    static auto toFlag(const std::string &flag) noexcept -> Flag;
+    struct Option
+    {
+        std::string name;
+        std::string description;
+        bool required = false;
+        OptionType type;
+
+        std::variant<bool *, i32 *, const char *> value;
+    };
 
 
-public:
+    class Options
+    {
 
-    CliParser(i32 argc, const char *argv[]);
-    auto has(Flag flag) const noexcept -> bool;
-    auto getString(Flag flag) const noexcept -> std::optional<std::string>;
-    auto getBool(Flag flag) const noexcept -> std::optional<bool>;
-    auto getInt(Flag flag) const noexcept -> std::optional<int>;
+    public:
+
+        Options() = default;
+
+        Options &addOption(const Option &option);
+
+    private:
+
+        std::unordered_map<std::string, Option> m_options;
+    };
+
+    class Parser
+    {
+
+    public:
+
+        Parser(i32 argc, const char *argv[], const Options &options);
 
 
-private:
+    private:
 
-    std::unordered_map<Flag, std::string> m_args;
-};
+        Options m_options;
+        std::vector<std::string> m_arguments;
+    };
+}
