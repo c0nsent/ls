@@ -1,7 +1,19 @@
-class Base
+#include "cli-parser.hpp"
+
+
+int main(i32 argc, const char *const argv[])
 {
-    public:
-//короче паттерн стратегия
-    template<typename Type>
-    virtual  void getValue(Type &value) = 0;
-};
+    cli::ParserConstructor lsOptions;
+
+    lsOptions.addOption({
+        .name = "-1",
+        .description = "",
+        .type = cli::OptionType::Boolean,
+        .value = false,
+    });
+
+    cli::Parser parser{argc, argv, lsOptions};
+
+    parser.
+
+}
