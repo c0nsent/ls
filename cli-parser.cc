@@ -1,83 +1,83 @@
 #include "cli-parser.hpp"
 
 #include <stdexcept>
+#include <vector>
 
 
 namespace cli
 {
-    ParserConstructor &ParserConstructor::addOption(const Option &option)
+    Options &Options::addOption(optName_t name, bool defaultValue)
     {
-        if (not m_options.try_emplace(option.name, option).second)
-        {
-            throw std::runtime_error("option already exists");
-        }
+        if (not m_options.try_emplace(name, Value{.type = Type::Boolean, .defaultValue = defaultValue}).second)
+            throw std::logic_error("Option \"" + name + "\" already exists");
+
+        return *this;
+    }
+
+    Options &Options::addOption(optName_t name, i32 defaultValue)
+    {
+        if (not m_options.try_emplace(std::move(name), Value{.type = Type::Integer, .defaultValue = defaultValue}).second)
+           throw std::logic_error("Option \"" + name + "\" already exists");
 
         return *this;
     }
 
 
-    bool ParserConstructor::has(const std::string &optionName) const
+    Options::Type Options::type(optName_t name) const
     {
-        return m_options.contains(optionName);
+        return m_options.at(name).type;
     }
 
 
-    optVal_t ParserConstructor::at(const std::string &optionName) const
+    bool Options::has(std::string_view name) const
     {
-        return m_options.at(optionName).value;
+        return m_options.contains(optName_t(name));
     }
 
 
-    optVal_t ParserConstructor::operator[](const std::string &optionName)
+    optVal_t Options::get(std::string_view name) const
     {
-        return m_options[optionName].value;
+        if (m_options.contains(optName_t(name)))
+            return m_options.at(optName_t(name)).defaultValue;
+
+        throw std::logic_error("Option \"" + optName_t(name) + "\" does not exists");
     }
 
 
-    void ParserConstructor::setValue(const std::string &option, bool value)
+    Parser::Parser(const i32 argc, const char *argv[], Options &&defaultOptions)
+        : m_defaultOptions{std::move(defaultOptions)}
     {
-        //std::holds_alternative<bool *>(m_options[option].value); //Заебашь проверку на тип
-        m_options[option].value = value;
-    }
+        if (argc < 2) return;
 
 
-    void ParserConstructor::setValue(const std::string &option, i32 value)
-    {
-        m_options[option].value = value;
-    }
+        std::vector<optName_t> args{*argv, *(argv + argc - 1)};
 
-
-    OptionType ParserConstructor::getType(const std::string &optionName) const
-    {
-        return m_options.at(optionName).type;
-    }
-
-
-    Parser::Parser(const i32 argc, const char *argv[], ParserConstructor &options)
-        : m_arguments{argv + 1, argv + argc - 1}
-
-    {
-        for (u32 i{0}; i != m_arguments.size() ; ++i)
+        for (size_t i{1}; i != args.size(); ++i) //игрорируем название самой проги
         {
-            if (options.has(m_arguments[i]))
+            if (m_defaultOptions.has(args[i]))
             {
-                switch (options.getType(m_arguments[i]))
+                if (Options::Type::Boolean == m_defaultOptions.type(args[i]))
                 {
-                    case OptionType::Boolean:
-                        options.setValue(m_arguments[i], true);
-                        break;
-                    case OptionType::Integer:
-                        if (i + 1 >= argc)
-                            throw std::runtime_error{"No value provided"};
-
-                        options.setValue(m_arguments[i], std::stoi(m_arguments[++i]));
-                        break;
-                    default:
-                        throw std::runtime_error("Unknown option type");
+                    m_parserOptions.emplace(args[i], Options::Value{.type = Options::Type::Boolean, .defaultValue = true} );
+                }
+                else if (Options::Type::Integer == m_defaultOptions.type(args[i]))
+                {
+                    m_parserOptions.emplace(args[i], Options::Value{.type = Options::Type::Integer, .defaultValue = std::stoi(args[++i])} );
                 }
             }
-            else
-                throw std::runtime_error{"Блядь"};
         }
+    }
+    optVal_t Parser::get(optName_t name) const
+    {
+        if (m_parserOptions.contains(name))
+            return m_parserOptions.at(name).defaultValue;
+
+        throw std::runtime_error("Option \"" + name + "\" does not exists");
+    }
+
+
+    size_t Parser::argsCount() const
+    {
+        return m_parserOptions.size();
     }
 }

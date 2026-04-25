@@ -3,77 +3,60 @@
 #include <string>
 #include <unordered_map>
 #include <variant>
-#include <vector>
 
 #include "basic-types-aliases.hpp"
 
 
 namespace cli
 {
-    enum class OptionType : u8
-    {
-        Boolean,
-        Integer,
-        //EnumSize, //Всегда должен быть последним
-    };
-
     using optVal_t = std::variant<bool, i32>;
-
-    struct Option
-    {
-        std::string name;
-        std::string description;
-        OptionType type;
-
-        optVal_t value;
-    };
+    using optName_t = std::string;
 
     class Options
     {
 
-    };
-
-    class ParserConstructor
-    {
-
     public:
 
-        ParserConstructor() = default;
+        enum class Type
+        {
+            Boolean,
+            Integer,
+        };
 
+        struct Value
+        {
+            Type type;
+            optVal_t defaultValue;
+        };
 
-        ParserConstructor &addOption(const Option &option);
+        Options() = default;
+        Options(Options &&) noexcept = default;
 
-        bool has(const std::string &optionName) const;
+        Options &addOption(optName_t name, bool defaultValue);
+        Options &addOption(optName_t name, i32 defaultValue);
 
-        optVal_t at(const std::string &optionName) const;
-        optVal_t operator[](const std::string &optionName);
+        Type type(optName_t name) const;
 
-        void setValue(const std::string &option, bool value);
-        void setValue(const std::string &option, i32 value);
-        //void setValue(const std::string &optionName, const char *value);
+        bool has(std::string_view name) const;
+        optVal_t get(std::string_view name) const;
 
+    private:
 
-        OptionType getType(const std::string &optionName) const;
-
-        std::string m_helpMessage;
-        std::unordered_map<std::string, Option> m_options;
+        std::unordered_map<optName_t, Value> m_options;
     };
 
     class Parser
     {
-        friend class ParserConstructor;
-
-        Parser(i32 argc, const char *const argv[], ParserConstructor &options);
-
-        void constructHelp();
-
     public:
 
+        Parser(i32 argc, const char *argv[], Options &&defaultOptions);
 
+        optVal_t get(optName_t name) const;
+        size_t argsCount() const;
 
     private:
 
-        Options m_options;
-        std::vector<std::string> m_arguments;
+        const Options m_defaultOptions;
+        std::unordered_map<optName_t, Options::Value> m_parserOptions;
     };
 }

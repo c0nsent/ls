@@ -1,19 +1,22 @@
 #include "cli-parser.hpp"
 
+#include <print>
 
-int main(i32 argc, const char *const argv[])
+
+int main(const i32 argc, const char * argv[])
 {
-    cli::ParserConstructor lsOptions;
+    cli::Options options;
 
-    lsOptions.addOption({
-        .name = "-1",
-        .description = "",
-        .type = cli::OptionType::Boolean,
-        .value = false,
-    });
+    options.addOption("-1", false);
 
-    cli::Parser parser{argc, argv, lsOptions};
+    /*
+    std::array args{"ls", "-1"};
 
-    parser.
+    cli::Parser parser{args.size(), args.data(), std::move(options)};
+    */
 
+    cli::Parser parser{argc, argv, std::move(options)};
+
+    if (std::get<bool>(parser.get("-1")))
+        std::println("test");
 }
