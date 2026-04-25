@@ -17,7 +17,7 @@ namespace cli
 
     public:
 
-        enum class Type
+        enum class Type : u8
         {
             Boolean,
             Integer,
@@ -35,15 +35,16 @@ namespace cli
         Options &addOption(optName_t name, bool defaultValue);
         Options &addOption(optName_t name, i32 defaultValue);
 
-        Type type(optName_t name) const;
+        [[nodiscard]] Type type(const optName_t &name) const;
 
-        bool has(std::string_view name) const;
-        optVal_t get(std::string_view name) const;
+        [[nodiscard]] bool has(const optName_t &name) const;
+        [[nodiscard]] optVal_t get(const optName_t &name) const;
 
     private:
 
         std::unordered_map<optName_t, Value> m_options;
     };
+
 
     class Parser
     {
@@ -51,8 +52,8 @@ namespace cli
 
         Parser(i32 argc, const char *argv[], Options &&defaultOptions);
 
-        optVal_t get(optName_t name) const;
-        size_t argsCount() const;
+        optVal_t get(const optName_t &name) const;
+        size_t argsCount() const noexcept;
 
     private:
 

@@ -8,34 +8,40 @@ namespace cli
 {
     Options &Options::addOption(optName_t name, bool defaultValue)
     {
-        if (not m_options.try_emplace(name, Value{.type = Type::Boolean, .defaultValue = defaultValue}).second)
-            throw std::logic_error("Option \"" + name + "\" already exists");
+        if (not m_options.contains(name))
+        {
+            m_options.emplace(std::move(name), Value{.type = Type::Boolean, .defaultValue = defaultValue} );
+            return *this;
+        }
 
-        return *this;
+        throw std::logic_error("Option \"" + name + "\" already exists");
     }
 
     Options &Options::addOption(optName_t name, i32 defaultValue)
     {
-        if (not m_options.try_emplace(std::move(name), Value{.type = Type::Integer, .defaultValue = defaultValue}).second)
-           throw std::logic_error("Option \"" + name + "\" already exists");
+        if (not m_options.contains(name))
+        {
+            m_options.emplace(std::move(name), Value{.type = Type::Integer, .defaultValue = defaultValue} );
+            return *this;
+        }
 
-        return *this;
+        throw std::logic_error("Option \"" + name + "\" does not exists");
     }
 
 
-    Options::Type Options::type(optName_t name) const
+    Options::Type Options::type(const optName_t &name) const
     {
         return m_options.at(name).type;
     }
 
 
-    bool Options::has(std::string_view name) const
+    bool Options::has(const optName_t &name) const
     {
-        return m_options.contains(optName_t(name));
+        return m_options.contains(name);
     }
 
 
-    optVal_t Options::get(std::string_view name) const
+    optVal_t Options::get(const optName_t &name) const
     {
         if (m_options.contains(optName_t(name)))
             return m_options.at(optName_t(name)).defaultValue;
@@ -49,25 +55,34 @@ namespace cli
     {
         if (argc < 2) return;
 
-
         std::vector<optName_t> args{*argv, *(argv + argc - 1)};
 
         for (size_t i{1}; i != args.size(); ++i) //игрорируем название самой проги
         {
-            if (m_defaultOptions.has(args[i]))
+            auto &name{args[i]};
+
+            if (not m_defaultOptions.has(name)) continue;
+
+            Options::Value value{};
+
+            switch (m_defaultOptions.type(name))
             {
-                if (Options::Type::Boolean == m_defaultOptions.type(args[i]))
-                {
-                    m_parserOptions.emplace(args[i], Options::Value{.type = Options::Type::Boolean, .defaultValue = true} );
-                }
-                else if (Options::Type::Integer == m_defaultOptions.type(args[i]))
-                {
-                    m_parserOptions.emplace(args[i], Options::Value{.type = Options::Type::Integer, .defaultValue = std::stoi(args[++i])} );
-                }
+                using enum Options::Type;
+
+                case Boolean:
+                    value = {.type = Boolean, .defaultValue = true};
+                    break;
+                case Integer:
+                    value = {.type = Integer, .defaultValue = std::stoi(args[++i])};
+                    break;
             }
+
+            m_parserOptions.emplace(std::move(name), value);
         }
     }
-    optVal_t Parser::get(optName_t name) const
+
+
+    optVal_t Parser::get(const optName_t &name) const
     {
         if (m_parserOptions.contains(name))
             return m_parserOptions.at(name).defaultValue;
@@ -76,7 +91,7 @@ namespace cli
     }
 
 
-    size_t Parser::argsCount() const
+    size_t Parser::argsCount() const noexcept
     {
         return m_parserOptions.size();
     }
